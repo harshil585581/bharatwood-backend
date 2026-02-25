@@ -18,10 +18,13 @@ import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from config import settings
 from models import Base, Product
 
-escaped_url = settings.database_url.replace("%", "%%")
+database_url = os.environ.get("DATABASE_URL")
+if not database_url:
+    raise ValueError("DATABASE_URL environment variable is not set!")
+
+escaped_url = database_url.replace("%", "%%")
 config.set_main_option("sqlalchemy.url", escaped_url)
 
 # add your model's MetaData object here
