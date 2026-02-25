@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Python virtual environment
+venv/
+env/
+.env
+
+# Uploads directory (we want to keep the directory but ignore its contents)
+uploads/*
+!uploads/.gitkeep
+
+# IDEs
+.vscode/
+.idea/
