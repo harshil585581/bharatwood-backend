@@ -53,7 +53,6 @@ This is a production-ready FastAPI backend using PostgreSQL and Alembic for migr
 ## Project Structure
 
 - `main.py`: The entry point of the FastAPI application.
-- `config.py`: Environment variable and configuration loading.
 - `database.py`: Core SQLAlchemy engine and session management.
 - `models/`: SQLAlchemy models representing database tables.
 - `schemas/`: Pydantic models for data validation and API payloads.

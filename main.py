@@ -18,6 +18,7 @@ app.add_middleware(
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 app.include_router(routers.router)
+app.include_router(routers.category_router)
 
 @app.get("/")
 def read_root():

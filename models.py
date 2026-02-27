@@ -15,3 +15,11 @@ class Product(Base):
     description = Column(Text, nullable=True)
     images = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class Category(Base):
+    __tablename__ = "categories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True, nullable=False)
+    image = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

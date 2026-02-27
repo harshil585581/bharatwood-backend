@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, File, Form, UploadFile
 from sqlalchemy.orm import Session
 from database import get_db
-from models import Product
-from schemas import ProductResponse
+from models import Product, Category
+from schemas import ProductResponse, CategoryResponse
 import os
 import uuid
 
@@ -10,6 +10,131 @@ router = APIRouter(
     prefix="/products",
     tags=["products"],
 )
+
+category_router = APIRouter(
+    prefix="/categories",
+    tags=["categories"],
+)
+
+
+@category_router.get("/", response_model=list[str])
+def get_categories(db: Session = Depends(get_db)):
+    db_products_cats = db.query(Product.category).filter(Product.category.isnot(None), Product.category != "").distinct().all()
+    db_product_cat_list = [c[0] for c in db_products_cats]
+    
+    db_categories = db.query(Category.name).all()
+    custom_cat_list = [c[0] for c in db_categories]
+    
+    # Merge defaults and db categories, removing duplicates
+    all_categories = sorted(list(set(custom_cat_list)))
+    return all_categories
+
+@category_router.get("/all", response_model=list[CategoryResponse])
+def get_all_categories(db: Session = Depends(get_db)):
+    categories = db.query(Category).order_by(Category.created_at.desc()).all()
+    return categories
+
+@category_router.post("/", response_model=CategoryResponse, status_code=201)
+async def create_category(
+    name: str = Form(...),
+    image: UploadFile = File(None),
+    db: Session = Depends(get_db)
+):
+    # Check if category already exists
+    existing = db.query(Category).filter(Category.name == name).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Category with this name already exists")
+        
+    image_path = None
+    if image:
+        ext = os.path.splitext(image.filename)[1]
+        filename = f"cat_{uuid.uuid4()}{ext}"
+        file_path = os.path.join(UPLOAD_DIR, filename)
+        
+        with open(file_path, "wb") as f:
+            f.write(await image.read())
+            
+        image_path = f"/uploads/{filename}"
+
+    db_category = Category(
+        name=name,
+        image=image_path
+    )
+    db.add(db_category)
+    db.commit()
+    db.refresh(db_category)
+    return db_category
+
+@category_router.put("/{category_id}", response_model=CategoryResponse)
+async def update_category(
+    category_id: int,
+    name: str = Form(None),
+    image: UploadFile = File(None),
+    db: Session = Depends(get_db)
+):
+    db_category = db.query(Category).filter(Category.id == category_id).first()
+    if not db_category:
+        raise HTTPException(status_code=404, detail="Category not found")
+        
+    if name is not None:
+        existing = db.query(Category).filter(Category.name == name, Category.id != category_id).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Category with this name already exists")
+        db_category.name = name
+
+    if image:
+        ext = os.path.splitext(image.filename)[1]
+        filename = f"cat_{uuid.uuid4()}{ext}"
+        file_path = os.path.join(UPLOAD_DIR, filename)
+        
+        with open(file_path, "wb") as f:
+            f.write(await image.read())
+            
+        if db_category.image:
+            old_full_path = db_category.image.lstrip("/")
+            if os.path.exists(old_full_path):
+                try:
+                    os.remove(old_full_path)
+                except Exception as e:
+                    print(f"Error removing old image: {e}")
+
+        db_category.image = f"/uploads/{filename}"
+
+    db.commit()
+    db.refresh(db_category)
+    return db_category
+
+@category_router.delete("/{category_id}", status_code=204)
+def delete_category(category_id: int, db: Session = Depends(get_db)):
+    db_category = db.query(Category).filter(Category.id == category_id).first()
+    if not db_category:
+        raise HTTPException(status_code=404, detail="Category not found")
+        
+    if db_category.image:
+        full_path = db_category.image.lstrip("/")
+        if os.path.exists(full_path):
+            os.remove(full_path)
+            
+    db.delete(db_category)
+    db.commit()
+    return
+
+@router.get("/stats")
+def get_stats(db: Session = Depends(get_db)):
+    total_products = db.query(Product).count()
+    
+    db_products_cats = db.query(Product.category).filter(Product.category.isnot(None), Product.category != "").distinct().all()
+    db_product_cat_list = [c[0] for c in db_products_cats]
+    
+    db_categories = db.query(Category.name).all()
+    custom_cat_list = [c[0] for c in db_categories]
+    
+    total_categories = len(set(custom_cat_list))
+    
+    return {
+        "total_products": total_products,
+        "total_categories": total_categories
+    }
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -50,8 +175,11 @@ async def create_product(
     return db_product
 
 @router.get("/", response_model=list[ProductResponse])
-def read_products(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    products = db.query(Product).offset(skip).limit(limit).all()
+def read_products(skip: int = 0, limit: int = 100, search: str = None, db: Session = Depends(get_db)):
+    query = db.query(Product)
+    if search:
+        query = query.filter(Product.name.ilike(f"%{search}%"))
+    products = query.order_by(Product.id.desc()).offset(skip).limit(limit).all()
     return products
 
 
@@ -105,7 +233,12 @@ async def update_product(
     db.refresh(db_product)
 
     return db_product
-
+@router.get("/{product_id}", response_model=ProductResponse)
+def get_product(product_id: int, db: Session = Depends(get_db)):
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return product
 
 @router.delete("/{product_id}", status_code=204)
 def delete_product(product_id: int, db: Session = Depends(get_db)):

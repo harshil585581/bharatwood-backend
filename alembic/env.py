@@ -18,7 +18,10 @@ import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from models import Base, Product
+from models import Base, Product, Category
+from dotenv import load_dotenv
+
+load_dotenv(override=True)
 
 database_url = os.environ.get("DATABASE_URL")
 if not database_url:
