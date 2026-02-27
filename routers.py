@@ -233,12 +233,26 @@ async def update_product(
     db.refresh(db_product)
 
     return db_product
+
+
+# to get latest products in home page
+@router.get("/latest", response_model=list[ProductResponse])
+def get_latest_products(limit: int = 4, db: Session = Depends(get_db)):
+    return (
+        db.query(Product)
+        .order_by(Product.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+
 @router.get("/{product_id}", response_model=ProductResponse)
 def get_product(product_id: int, db: Session = Depends(get_db)):
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     return product
+
 
 @router.delete("/{product_id}", status_code=204)
 def delete_product(product_id: int, db: Session = Depends(get_db)):
