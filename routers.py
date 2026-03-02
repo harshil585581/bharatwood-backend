@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, File, Form, UploadFile
 from sqlalchemy.orm import Session
 from database import get_db
-from models import Product, Category
-from schemas import ProductResponse, CategoryResponse
+from models import Product, Category, Brand
+from schemas import ProductResponse, CategoryResponse, BrandResponse
 import os
 import uuid
 
@@ -15,6 +15,41 @@ category_router = APIRouter(
     prefix="/categories",
     tags=["categories"],
 )
+
+
+brand_router = APIRouter(
+    prefix="/brands",
+    tags=["brands"],
+)
+
+
+@brand_router.get("/", response_model=list[BrandResponse])
+def get_all_brands(db: Session = Depends(get_db)):
+    brands = db.query(Brand).order_by(Brand.name.asc()).all()
+    return brands
+
+@brand_router.post("/", response_model=BrandResponse, status_code=201)
+def create_brand(
+    name: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    existing = db.query(Brand).filter(Brand.name == name).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Brand with this name already exists")
+    db_brand = Brand(name=name)
+    db.add(db_brand)
+    db.commit()
+    db.refresh(db_brand)
+    return db_brand
+
+@brand_router.delete("/{brand_id}", status_code=204)
+def delete_brand(brand_id: int, db: Session = Depends(get_db)):
+    db_brand = db.query(Brand).filter(Brand.id == brand_id).first()
+    if not db_brand:
+        raise HTTPException(status_code=404, detail="Brand not found")
+    db.delete(db_brand)
+    db.commit()
+    return
 
 
 @category_router.get("/", response_model=list[str])
@@ -144,6 +179,7 @@ async def create_product(
     name: str = Form(...),
     category: str = Form(None),
     tags: str = Form(None),
+    brand: str = Form(""),
     description: str = Form(None),
     images: list[UploadFile] = File(None),
     db: Session = Depends(get_db)
@@ -166,6 +202,7 @@ async def create_product(
         name=name,
         category=category,
         tags=tags,
+        brand=brand,
         description=description,
         images=image_paths
     )
@@ -190,6 +227,7 @@ async def update_product(
     name: str = Form(None),
     category: str = Form(None),
     tags: str = Form(None),
+    brand: str = Form(None),
     description: str = Form(None),
     images: list[UploadFile] = File(None),
     existing_images: str = Form(None),   # 👈 NEW
@@ -206,6 +244,8 @@ async def update_product(
         db_product.category = category
     if tags is not None:
         db_product.tags = tags
+    if brand is not None:
+        db_product.brand = brand
     if description is not None:
         db_product.description = description
 

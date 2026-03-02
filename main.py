@@ -19,6 +19,7 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 app.include_router(routers.router)
 app.include_router(routers.category_router)
+app.include_router(routers.brand_router)
 
 @app.get("/")
 def read_root():

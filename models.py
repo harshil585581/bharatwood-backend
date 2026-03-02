@@ -12,6 +12,7 @@ class Product(Base):
     name = Column(String, index=True, nullable=False)
     category = Column(String, index=True, nullable=True)
     tags = Column(String, nullable=True)
+    brand = Column(String, nullable=False, default="")
     description = Column(Text, nullable=True)
     images = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -22,4 +23,11 @@ class Category(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True, nullable=False)
     image = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class Brand(Base):
+    __tablename__ = "brands"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

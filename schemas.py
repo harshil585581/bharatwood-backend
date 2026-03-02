@@ -6,6 +6,7 @@ class ProductBase(BaseModel):
     name: str
     category: Optional[str] = None
     tags: Optional[str] = None
+    brand: str = ""
     description: Optional[str] = None
 
 class ProductCreate(ProductBase):
@@ -24,6 +25,7 @@ class ProductUpdate(BaseModel):
     name: Optional[str] = None
     category: Optional[str] = None
     tags: Optional[str] = None
+    brand: Optional[str] = None
     description: Optional[str] = None
     images: Optional[List[str]] = None
 
@@ -36,6 +38,16 @@ class CategoryCreate(CategoryBase):
 class CategoryResponse(CategoryBase):
     id: int
     image: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class BrandBase(BaseModel):
+    name: str
+
+class BrandResponse(BrandBase):
+    id: int
     created_at: datetime
 
     class Config:
