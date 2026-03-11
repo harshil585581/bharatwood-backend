@@ -31,3 +31,13 @@ class Brand(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class SiteVisit(Base):
+    __tablename__ = "site_visits"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ip_address = Column(String, index=True, nullable=True)
+    session_id = Column(String, index=True, nullable=True)
+    user_agent = Column(String, nullable=True)
+    origin = Column(String, index=True, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)

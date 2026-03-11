@@ -52,3 +52,12 @@ class BrandResponse(BrandBase):
 
     class Config:
         from_attributes = True
+
+class MonthlyVisitStats(BaseModel):
+    month: str
+    visits: int
+
+class VisitRecord(BaseModel):
+    ip_address: Optional[str] = None
+    session_id: Optional[str] = None
+    user_agent: Optional[str] = None
