@@ -213,7 +213,7 @@ async def create_product(
 
 
 @router.get("/", response_model=list[ProductResponse])
-def read_products(skip: int = 0, limit: int = 100, search: str = None, db: Session = Depends(get_db)):
+def read_products(skip: int = 0, limit: int = 1000, search: str = None, db: Session = Depends(get_db)):
     query = db.query(Product)
     if search:
         query = query.filter(Product.name.ilike(f"%{search}%"))
