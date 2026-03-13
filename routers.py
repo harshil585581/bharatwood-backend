@@ -73,6 +73,7 @@ def get_all_categories(db: Session = Depends(get_db)):
 async def create_category(
     name: str = Form(...),
     image: UploadFile = File(None),
+    subcategories: str = Form(None),
     db: Session = Depends(get_db)
 ):
     # Check if category already exists
@@ -91,9 +92,15 @@ async def create_category(
             
         image_path = f"/uploads/{filename}"
 
+    parsed_subcategories = []
+    if subcategories:
+        import json
+        parsed_subcategories = json.loads(subcategories)
+
     db_category = Category(
         name=name,
-        image=image_path
+        image=image_path,
+        subcategories=parsed_subcategories
     )
     db.add(db_category)
     db.commit()
@@ -105,6 +112,7 @@ async def update_category(
     category_id: int,
     name: str = Form(None),
     image: UploadFile = File(None),
+    subcategories: str = Form(None),
     db: Session = Depends(get_db)
 ):
     db_category = db.query(Category).filter(Category.id == category_id).first()
@@ -116,6 +124,10 @@ async def update_category(
         if existing:
             raise HTTPException(status_code=400, detail="Category with this name already exists")
         db_category.name = name
+
+    if subcategories is not None:
+        import json
+        db_category.subcategories = json.loads(subcategories)
 
     if image:
         ext = os.path.splitext(image.filename)[1]
@@ -178,6 +190,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 async def create_product(
     name: str = Form(...),
     category: str = Form(None),
+    subcategory: str = Form(None),
     tags: str = Form(None),
     brand: str = Form(""),
     description: str = Form(None),
@@ -201,6 +214,7 @@ async def create_product(
     db_product = Product(
         name=name,
         category=category,
+        subcategory=subcategory,
         tags=tags,
         brand=brand,
         description=description,
@@ -226,6 +240,7 @@ async def update_product(
     product_id: int,
     name: str = Form(None),
     category: str = Form(None),
+    subcategory: str = Form(None),
     tags: str = Form(None),
     brand: str = Form(None),
     description: str = Form(None),
@@ -242,6 +257,8 @@ async def update_product(
         db_product.name = name
     if category is not None:
         db_product.category = category
+    if subcategory is not None:
+        db_product.subcategory = subcategory
     if tags is not None:
         db_product.tags = tags
     if brand is not None:

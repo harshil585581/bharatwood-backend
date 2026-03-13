@@ -10,6 +10,8 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Backend API")
 
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, RedirectResponse
+import os
 
 # Configure CORS
 app.add_middleware(
@@ -21,7 +23,13 @@ app.add_middleware(
 )
 # hi thisis test
 
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+# app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+@app.get("/uploads/{file_path:path}")
+async def get_upload_file(file_path: str):
+    local_path = os.path.join("uploads", file_path)
+    if os.path.exists(local_path):
+        return FileResponse(local_path)
+    return RedirectResponse(url=f"https://backend.bharatwood.co/uploads/{file_path}")
 
 app.include_router(routers.router)
 app.include_router(routers.category_router)

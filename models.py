@@ -11,6 +11,7 @@ class Product(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False)
     category = Column(String, index=True, nullable=True)
+    subcategory = Column(String, nullable=True)
     tags = Column(String, nullable=True)
     brand = Column(String, nullable=False, default="")
     description = Column(Text, nullable=True)
@@ -23,6 +24,7 @@ class Category(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True, nullable=False)
     image = Column(String, nullable=True)
+    subcategories = Column(JSON, default=list, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class Brand(Base):
