@@ -41,10 +41,18 @@ class CategoryResponse(CategoryBase):
     id: int
     image: Optional[str] = None
     subcategories: Optional[List[str]] = []
+    order: Optional[int] = 0
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+class CategoryReference(BaseModel):
+    id: int
+    order: int
+
+class CategoryOrderUpdate(BaseModel):
+    categories: List[CategoryReference]
 
 class BrandBase(BaseModel):
     name: str

@@ -25,6 +25,7 @@ class Category(Base):
     name = Column(String, unique=True, index=True, nullable=False)
     image = Column(String, nullable=True)
     subcategories = Column(JSON, default=list, nullable=True)
+    order = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class Brand(Base):

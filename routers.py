@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, File, Form, UploadFile
 from sqlalchemy.orm import Session
 from database import get_db
 from models import Product, Category, Brand
-from schemas import ProductResponse, CategoryResponse, BrandResponse
+from schemas import ProductResponse, CategoryResponse, BrandResponse, CategoryOrderUpdate
 import os
 import uuid
 
@@ -66,8 +66,15 @@ def get_categories(db: Session = Depends(get_db)):
 
 @category_router.get("/all", response_model=list[CategoryResponse])
 def get_all_categories(db: Session = Depends(get_db)):
-    categories = db.query(Category).order_by(Category.created_at.desc()).all()
+    categories = db.query(Category).order_by(Category.order.asc(), Category.created_at.desc()).all()
     return categories
+
+@category_router.post("/reorder", status_code=200)
+def reorder_categories(update_data: CategoryOrderUpdate, db: Session = Depends(get_db)):
+    for item in update_data.categories:
+        db.query(Category).filter(Category.id == item.id).update({"order": item.order})
+    db.commit()
+    return {"message": "Order updated successfully"}
 
 @category_router.post("/", response_model=CategoryResponse, status_code=201)
 async def create_category(
@@ -119,11 +126,16 @@ async def update_category(
     if not db_category:
         raise HTTPException(status_code=404, detail="Category not found")
         
-    if name is not None:
+    old_name = db_category.name
+
+    if name is not None and name != old_name:
         existing = db.query(Category).filter(Category.name == name, Category.id != category_id).first()
         if existing:
             raise HTTPException(status_code=400, detail="Category with this name already exists")
         db_category.name = name
+        
+        # Update products associated with this category
+        db.query(Product).filter(Product.category == old_name).update({"category": name})
 
     if subcategories is not None:
         import json
