@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import routers
 import analytics_router
@@ -25,11 +25,16 @@ app.add_middleware(
 
 # app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 @app.get("/uploads/{file_path:path}")
-async def get_upload_file(file_path: str):
+async def get_upload_file(file_path: str, request: Request):
     local_path = os.path.join("uploads", file_path)
     if os.path.exists(local_path):
         return FileResponse(local_path)
-    return RedirectResponse(url=f"https://backend.bharatwood.co/uploads/{file_path}")
+    
+    # Only redirect if NOT running on the production server
+    if "backend.bharatwood.co" not in str(request.url):
+        return RedirectResponse(url=f"https://backend.bharatwood.co/uploads/{file_path}")
+        
+    raise HTTPException(status_code=404, detail="File not found")
 
 app.include_router(routers.router)
 app.include_router(routers.category_router)

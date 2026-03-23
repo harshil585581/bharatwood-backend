@@ -285,7 +285,6 @@ async def update_product(
         import json
         final_images = json.loads(existing_images)
 
-    # 🔥 Add newly uploaded images
     if images:
         for image in images:
             ext = os.path.splitext(image.filename)[1]
