@@ -120,6 +120,8 @@ async def update_category(
     name: str = Form(None),
     image: UploadFile = File(None),
     subcategories: str = Form(None),
+    subcategory_renames: str = Form(None),
+    subcategory_deletions: str = Form(None),
     db: Session = Depends(get_db)
 ):
     db_category = db.query(Category).filter(Category.id == category_id).first()
@@ -127,6 +129,44 @@ async def update_category(
         raise HTTPException(status_code=404, detail="Category not found")
         
     old_name = db_category.name
+
+    if subcategory_deletions is not None:
+        import json
+        import os
+        try:
+            deletions = json.loads(subcategory_deletions)
+            for del_sub in deletions:
+                products_to_delete = db.query(Product).filter(
+                    Product.category == old_name,
+                    Product.subcategory == del_sub
+                ).all()
+                for prod in products_to_delete:
+                    if prod.images:
+                        for img_path in prod.images:
+                            full_path = img_path.lstrip("/")
+                            if os.path.exists(full_path):
+                                try:
+                                    os.remove(full_path)
+                                except:
+                                    pass
+                    db.delete(prod)
+        except Exception as e:
+            print(f"Error handling subcategory deletions: {e}")
+
+    if subcategory_renames is not None:
+        import json
+        try:
+            renames = json.loads(subcategory_renames)
+            for rename in renames:
+                old_sub = rename.get('old')
+                new_sub = rename.get('new')
+                if old_sub and new_sub and old_sub != new_sub:
+                    db.query(Product).filter(
+                        Product.category == old_name,
+                        Product.subcategory == old_sub
+                    ).update({"subcategory": new_sub})
+        except:
+            pass
 
     if name is not None and name != old_name:
         existing = db.query(Category).filter(Category.name == name, Category.id != category_id).first()
