@@ -27,6 +27,9 @@ database_url = os.environ.get("DATABASE_URL")
 if not database_url:
     raise ValueError("DATABASE_URL environment variable is not set!")
 
+# Clean leading/trailing whitespace and quotes (common in Docker env configs)
+database_url = database_url.strip().strip("'\"")
+
 # SQLAlchemy 1.4+ requires 'postgresql://' instead of 'postgres://'
 if database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
