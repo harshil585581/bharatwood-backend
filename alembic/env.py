@@ -30,6 +30,21 @@ if not database_url:
 # Clean leading/trailing whitespace and quotes (common in Docker env configs)
 database_url = database_url.strip().strip("'\"")
 
+# Safe debug log (hides password)
+try:
+    if "@" in database_url:
+        db_parts = database_url.split("@", 1)
+        scheme_user = db_parts[0]
+        host_db = db_parts[1]
+        if ":" in scheme_user:
+            scheme_user_parts = scheme_user.rsplit(":", 1)
+            scheme_user = scheme_user_parts[0] + ":***"
+        print(f"DATABASE_URL (alembic check): {scheme_user}@{host_db}", flush=True)
+    else:
+        print(f"DATABASE_URL (alembic check): {database_url}", flush=True)
+except Exception:
+    pass
+
 # SQLAlchemy 1.4+ requires 'postgresql://' instead of 'postgres://'
 if database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
